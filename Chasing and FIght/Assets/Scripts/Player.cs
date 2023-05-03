@@ -1,19 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.AI;
 
 public class Player : Character
 {
-    Coroutine AttackCoroutine;
-    Vector3 m_Destination;
-
-    bool isWalk;
-
-    // Update is called once per frame
     private void Update()
     {
+        if (IsDead) return;
         // Left Click on Enemy
         if (Input.GetMouseButtonDown(0))
         {
@@ -48,10 +39,9 @@ public class Player : Character
             }
         }
 
-        if (Vector3.Distance(transform.position, m_Destination) <= 0.5f && isWalk)
+        if (Vector3.Distance(transform.position, m_Destination) <= 0.25f && isWalk)
         {
             m_Anim.Play(IdleAnim);
-            m_Agent.isStopped = true;
             isWalk = false;
         }
 
@@ -64,25 +54,11 @@ public class Player : Character
                 m_Agent.isStopped = true;
                 AttackCoroutine ??= StartCoroutine(OnAttack(hitColliders));
             }
+            transform.LookAt(m_Target);
         }
     }
 
-    IEnumerator OnAttack(Collider[] targets)
-    {
-        if (!targets.All(x => x.GetComponent<Character>().IsDead))
-        {
-            m_Anim.Play(AttackAnim);
-            for (int i = 0; i < targets.Length; i++)
-            {
-                if (!targets[i].GetComponent<Character>().IsDead)
-                {
-                    targets[i].GetComponent<Character>().ApplyDamage(this);
-                }
-            }
-            yield return new WaitForSeconds(1f);
-            AttackCoroutine = null;
-        }
-    }
+
 
 
 }

@@ -1,9 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
-public class Character : MonoBehaviour
+public abstract class Character : MonoBehaviour
 {
     protected static readonly int IdleAnim = Animator.StringToHash("Idle");
     protected static readonly int WalkAnim = Animator.StringToHash("Walk");
@@ -17,17 +18,19 @@ public class Character : MonoBehaviour
     public float Atk;
     public float AtkRange;
     public float Speed;
+
     private float m_CurrentHp;
 
-    // Component
     protected Animator m_Anim;
     protected NavMeshAgent m_Agent;
 
-    // Enemy
     protected Transform m_Target;
+    protected Coroutine AttackCoroutine;
+    protected Vector3 m_Destination;
     public bool IsDead;
+    protected bool isWalk;
 
-    private void Awake()
+    protected virtual void Awake()
     {
         m_Anim = GetComponent<Animator>();
         m_Agent = GetComponent<NavMeshAgent>();
@@ -39,7 +42,7 @@ public class Character : MonoBehaviour
         m_Agent.speed = Speed;
     }
 
-    public void ApplyDamage(Character damager)
+    public virtual void ApplyDamage(Character damager)
     {
         m_CurrentHp -= damager.Atk;
         m_CurrentHp = Mathf.Clamp(m_CurrentHp, 0, MaxHp);
@@ -51,7 +54,24 @@ public class Character : MonoBehaviour
         }
     }
 
-    void OnGUI()
+    protected IEnumerator OnAttack(Collider[] targets)
+    {
+        if (!targets.All(x => x.GetComponent<Character>().IsDead))
+        {
+            m_Anim.Play(AttackAnim);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (!targets[i].GetComponent<Character>().IsDead)
+                {
+                    targets[i].GetComponent<Character>().ApplyDamage(this);
+                }
+            }
+            yield return new WaitForSeconds(1f);
+            AttackCoroutine = null;
+        }
+    }
+
+    private void OnGUI()
     {
         if (IsDead)
         {
